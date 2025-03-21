@@ -28,7 +28,7 @@ jobs:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./vendor/    # Sync local vendor directory
+          local-dir: ./vendor    # Sync local vendor directory
           server-dir: /vendor/  # Upload to server
 
       - name: Run Composer Install
