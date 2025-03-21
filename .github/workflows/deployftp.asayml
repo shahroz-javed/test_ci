@@ -1,0 +1,89 @@
+name: Deploy to GoDaddy
+
+on:
+  push:
+    branches:
+      - main  # Change if using another branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Sync Files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: ./
+          server-dir: /
+
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Check if `vendor/` exists
+        run: ls -la ./vendor/
+      - name: Upload `vendor/` via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./vendor/    # Sync local vendor directory
+          server-dir: /vendor/  # Upload to server
+
+      - name: Run Composer Install
+        run: |
+          curl --ftp-ssl --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
+          --upload-file "composer.phar" "ftp://${{ secrets.FTP_HOST }}/composer.phar"
+
+      - name: Migrate Database
+        run: |
+          curl "https://chapimaster.com/artisan.php?command=migrate"
+
+      - name: Clear Cache
+        run: |
+          curl "https://chapimaster.com/artisan.php?command=cache:clear"
+          curl "https://chapimaster.com/artisan.php?command=config:clear"
+          curl "https://chapimaster.com/artisan.php?command=config:cache"
+
+
+
+
+
+
+
+
+
+
+
+        #   - name: Upload `.env` file via FTP
+        #   uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        #   with:
+        #     server: ${{ secrets.FTP_HOST }}
+        #     username: ${{ secrets.FTP_USERNAME }}
+        #     password: ${{ secrets.FTP_PASSWORD }}
+        #     local-dir: ./
+        #     server-dir: /home/feos82mg9min/public_html/test/
+        #     exclude: |
+        #       **/*
+        #       !.env  # Only upload .env file
+
+        # - name: Verify `.env` File Exists
+        #   run: ls -la /home/feos82mg9min/public_html/test/.env
+
+
+
+
+  #         - name: Create `.env` File via SSH
+  # uses: appleboy/ssh-action@v0.1.6
+  # with:
+  #   host: ${{ secrets.SSH_HOST }}
+  #   username: ${{ secrets.SSH_USERNAME }}
+  #   password: ${{ secrets.SSH_PASSWORD }}
+  #   script: |
+  #     echo "${{ secrets.ENV_CONTENT }}" > /home/feos82mg9min/public_html/test/.env

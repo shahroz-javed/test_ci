@@ -12,41 +12,46 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Sync Files via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT }}
-          local-dir: ./
-          server-dir: /
-
-      - name: Install Composer Dependencies
-        run: composer install --no-dev --optimize-autoloader
-
-      - name: Check if `vendor/` exists
-        run: ls -la ./vendor/
-      - name: Upload `vendor/` via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./vendor/    # Sync local vendor directory
-          server-dir: /vendor/  # Upload to server
-
-      - name: Run Composer Install
+      - name: Setup SSH Key
         run: |
-          curl --ftp-ssl --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
-          --upload-file "composer.phar" "ftp://${{ secrets.FTP_HOST }}/composer.phar"
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Migrate Database
+      - name: Test SSH Connection
+        run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "echo 'SSH Connection Successful'"
+
+      - name: Deploy Files via SSH (rsync)
         run: |
-          curl "https://chapimaster.com/artisan.php?command=migrate"
+          rsync -avz --delete --exclude=".git" --exclude=".github" --exclude="storage" --exclude=".env" \
+          -e "ssh -p ${{ secrets.SSH_PORT }}" ./ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/
+
+      - name: Run Composer Install on Server
+        run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+          cd /
+          composer install --no-dev --optimize-autoloader
+          EOF
+
+      - name: Set Permissions
+        run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+          cd /
+          chmod -R 775 storage bootstrap/cache
+          chown -R $(whoami):$(whoami) storage bootstrap/cache
+          EOF
+
+      - name: Run Migrations
+        run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+          cd /
+          php artisan migrate --force
+          EOF
 
       - name: Clear Cache
-        run: |
-          curl "https://chapimaster.com/artisan.php?command=cache:clear"
-          curl "https://chapimaster.com/artisan.php?command=config:clear"
-          curl "https://chapimaster.com/artisan.php?command=config:cache"
+        run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
+          cd /
+          php artisan cache:clear
+          php artisan config:clear
+          php artisan config:cache
+          php artisan route:clear
+          php artisan view:clear
+          EOF
