@@ -12,6 +12,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # Setup SSH Key (if using key-based authentication)
       - name: Setup SSH Key
         run: |
           mkdir -p ~/.ssh
@@ -19,20 +20,31 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Test SSH Connection
+      # Test SSH Connection with Key
+      - name: Test SSH Connection with Key
         run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "echo 'SSH Connection Successful'"
 
+      # Fallback to Password if Key Fails
+      - name: Test SSH Connection with Password (if key fails)
+        if: failure()
+        run: |
+          sudo apt-get install -y sshpass
+          sshpass -p "${{ secrets.SSH_PASSWORD }}" ssh -o StrictHostKeyChecking=no -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} "echo 'SSH Connection Successful'"
+
+      # Deploy Files via SSH (rsync)
       - name: Deploy Files via SSH (rsync)
         run: |
           rsync -avz --delete --exclude=".git" --exclude=".github" --exclude="storage" --exclude=".env" \
           -e "ssh -p ${{ secrets.SSH_PORT }}" ./ ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }}:/
 
+      # Run Composer Install on Server
       - name: Run Composer Install on Server
         run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd /
           composer install --no-dev --optimize-autoloader
           EOF
 
+      # Set Permissions
       - name: Set Permissions
         run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd /
@@ -40,12 +52,14 @@ jobs:
           chown -R $(whoami):$(whoami) storage bootstrap/cache
           EOF
 
+      # Run Migrations
       - name: Run Migrations
         run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd /
           php artisan migrate --force
           EOF
 
+      # Clear Cache
       - name: Clear Cache
         run: ssh -p ${{ secrets.SSH_PORT }} ${{ secrets.SSH_USERNAME }}@${{ secrets.SSH_HOST }} << 'EOF'
           cd /
