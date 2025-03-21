@@ -22,6 +22,11 @@ jobs:
           local-dir: ./
           server-dir: /
 
+      - name: Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader
+
+      - name: Check if `vendor/` exists
+        run: ls -la ./vendor/
       - name: Upload `vendor/` via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
