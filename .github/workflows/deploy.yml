@@ -22,6 +22,15 @@ jobs:
           local-dir: ./
           server-dir: /
 
+      - name: Upload `vendor/` via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./vendor/    # Sync local vendor directory
+          server-dir: /vendor/  # Upload to server
+
       - name: Run Composer Install
         run: |
           curl --ftp-ssl --user "${{ secrets.FTP_USERNAME }}:${{ secrets.FTP_PASSWORD }}" \
