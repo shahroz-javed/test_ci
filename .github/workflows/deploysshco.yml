@@ -24,11 +24,11 @@ jobs:
       - name: Copy .env
         run: cp .env.test .env
 
-      - name: generate key
-        run: php artisan key:generate
-
       - name: Install app
         run: composer install
+
+      - name: generate key
+        run: php artisan key:generate
 
       - name: Run migrations
         run: php artisan migrate
