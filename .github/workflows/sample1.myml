@@ -1,0 +1,64 @@
+# Career Development Deployment
+on:
+  push
+
+name: Deploy website on push
+
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ☐ Get latest code
+        uses: actions/checkout@v4
+
+      # - name: Cache Composer dependencies
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: vendor
+      #     key: composer-${{ hashFiles('**/composer.lock') }}
+      #     restore-keys: composer-
+
+      # - name: Install Dependencies
+      #   run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      # - name: Cache Node modules
+      #   uses: actions/cache@v3
+      #   with:
+      #     path: node_modules
+      #     key: npm-${{ hashFiles('**/package-lock.json') }}
+      #     restore-keys: npm-
+
+      # - name: Install Node Dependencies
+      #   run: npm i
+
+      # - name: Generate Key
+      #   run: php artisan key:generate
+
+      - name: Copy .env
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+
+      # - name: Setup PHP with PECL extension
+      #   uses: shivammathur/setup-php@v2
+      #   with:
+      #     php-version: '8.1|'
+
+      # - name: Create database
+      #   run: touch ./database/database.sqlite
+      # - name: Copy .env
+      #   run: cp .env.test .env
+
+      - name: Sync files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: ${{ secrets.FTP_PORT }}
+          local-dir: ./
+          server-dir: /
+
+
+
+
