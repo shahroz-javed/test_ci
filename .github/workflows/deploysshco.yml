@@ -48,4 +48,5 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd ${{ secrets.TEST_CI_PATH }}
+            chmod +x build.sh
             ./build.sh
