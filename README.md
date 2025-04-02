@@ -17,6 +17,7 @@
 
 .env.test for github to use [if no sensitive data in it]
 Tip:
+don't push from server as it may cause infinite loop of workflow trigger
 store production env content in secret and populate in workflow
 
 repo Settings → Secrets and variables → Actions 
@@ -68,7 +69,7 @@ Step 1: Generate SSH Key in cPanel
 Step 2: Authorize the Key
     In Manage SSH Keys, find your newly generated public key.
     Click Manage and then click Authorize.
-    
+
 Add the Public Key (id_rsa.pub) to the Server
 	cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
 	chmod 600 ~/.ssh/authorized_keys
