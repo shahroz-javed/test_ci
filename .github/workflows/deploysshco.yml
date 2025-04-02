@@ -48,5 +48,4 @@ jobs:
           password: ${{ secrets.SSH_PASSWORD }}
           script: |
             cd ${{ secrets.TEST_CI_PATH }}
-            # cd ${{ secrets.APP_PATH }}
             ./build.sh
