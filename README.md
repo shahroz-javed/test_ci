@@ -28,7 +28,12 @@ repo Settings → Secrets and variables → Actions
 3- paste in your yml
 4- ftp account
 
+Step 1: Generate SSH Key in cPanel
+    Go to cPanel > SSH Access > Manage SSH Keys.
 
+Step 2: Authorize the Key
+    In Manage SSH Keys, find your newly generated public key.
+    Click Manage and then click Authorize.
 
 
 //tutorial ci/cd vps ssh
@@ -46,17 +51,27 @@ php ./vendor/bin/phpunit
 create .env.test
 
 //after connect ssh in project dir
+clone repo in destination folder [i.e test_ci]
 git config pull.rebase false
 pwd
-	/mnt/data/home/master/applications/cnpyummpea/public_html
-git config --global-add safe.directory /mnt/data/home/master/applications/cnpyummpea/public_html
+	/home/feos82mg9min/public_html/test_ci
+git config --global --add safe.directory /home/feos82mg9min/public_html/test_ci
 
 add ssh key to github
-clone in public_html your project
-
 generate key
 	ssh-keygen -t rsa -b 4096 -m PEM -C "cloudways-deploy" -f ~/.ssh/id_rsa_cloudways
 	note paraphrase
+
+Step 1: Generate SSH Key in cPanel
+    Go to cPanel > SSH Access > Manage SSH Keys.
+
+Step 2: Authorize the Key
+    In Manage SSH Keys, find your newly generated public key.
+    Click Manage and then click Authorize.
+    
+Add the Public Key (id_rsa.pub) to the Server
+	cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+	chmod 600 ~/.ssh/authorized_keys
 
 in github secret add
 APP_PATH	[is output of pwd command result in project dir]

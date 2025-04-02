@@ -16,7 +16,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.3
+          php-version: 8.2
 
       - name: Create database
         run: touch ./database/database.sqlite
@@ -39,13 +39,14 @@ jobs:
       - name: Test PHPUnit
         run: ./vendor/bin/phpunit
 
-      # - name: Deploy using ssh
-      #   uses: appleboy/ssh-action@v1.1.0
-      #   with:
-      #     host: ${{ secrets.SSH_HOST }}
-      #     username: ${{ secrets.SSH_USERNAME }}
-      #     # key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     password: ${{ secrets.SSH_PASSWORD }}
-      #     script: |
-      #       cd ${{ secrets.APP_PATH }}
-      #       ./build.sh
+      - name: Deploy using ssh
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          # key: ${{ secrets.SSH_PRIVATE_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
+          script: |
+            cd ${{ secrets.TEST_CI_PATH }}
+            # cd ${{ secrets.APP_PATH }}
+            ./build.sh
